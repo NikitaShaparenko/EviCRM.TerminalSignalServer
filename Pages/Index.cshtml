@@ -1,0 +1,220 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "EviCRM Terminal Server Host";
+}
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+     <script src="~/lib/signalr.js/jquery.signalR.js"></script>
+    <script src="~/lib/signalr_lib.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+   
+<div class="text-center">
+    <h1 class="display-4">Это служебная страница</h1>
+    <p>Она предназначена для коммуникации терминальных клиентов EviCRM.TerminalClient</p>
+    <p>Вы читаете это сообщение по одной из двух причин:</p>
+   
+</div>
+
+ <p>
+        <ul>
+            <li>Вы разработчик</li>
+            <li>Вы попали сюда случайно, но тут нет ничего интересного, кроме служебной информации</li>
+        </ul>
+    </p>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EviCRM Terminal Server Host</title>
+    <style type="text/css">
+        .container2 {
+            background-color: #99CCFF;
+            border: thick solid #808080;
+            padding: 20px;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <p>
+    <div class="container">
+        <p>Эта форма предназначена для отправки данных от имени сервера</p>
+        <p><b>Это окно только лишь для отладки, его не будет в продакшене</b></p>
+
+        <p>Канал: <b>Статус </b><i>[status]</i>
+        <input type="text" id="message_status" />
+        <input type="button" id="sendmessage_status" value="Отправить" />
+        </p>
+
+        <p>Канал: <b>Главный </b><i>[main]</i>
+        <input type="text" id="message_main" />
+        <input type="button" id="sendmessage_main" value="Отправить" />
+        </p>
+        
+        <p>Канал: <b>Данные </b><i>[data]</i>
+        <input type="text" id="message_data" />
+        <input type="button" id="sendmessage_data" value="Отправить" />
+        </p>
+        
+        <p>Канал: <b>Команды </b><i>[cmds]</i>
+        <input type="text" id="message_cmds" />
+        <input type="button" id="sendmessage_cmds" value="Отправить" />
+        </p>
+
+        <p>Канал: <b>Общий </b><i>[general]</i>
+        <input type="text" id="message_general" />
+        <input type="button" id="sendmessage_general" value="Отправить" />
+        </p>
+
+        <ul id="discussion"></ul>
+    </div>
+    </p>
+
+
+    <script type="text/javascript" src="lib/signalr.js/jquery.signalR.js"></script>
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', function () {
+
+            var messageInput_status = document.getElementById('message_status');
+            var messageInput_main = document.getElementById('message_main');
+            var messageInput_data = document.getElementById('message_data');
+            var messageInput_cmds = document.getElementById('message_cmds');
+            var messageInput_general = document.getElementById('message_general');
+
+            var name = 'term_server_web';
+            messageInput_status.focus();
+
+            // Start the connection.
+            var connection_status = new signalR.HubConnectionBuilder()
+                                .withUrl('/status')
+                                .build();
+
+            var connection_main = new signalR.HubConnectionBuilder()
+                                .withUrl('/main')
+                                .build();
+
+            var connection_data = new signalR.HubConnectionBuilder()
+                                .withUrl('/data')
+                                .build();
+
+            var connection_cmds = new signalR.HubConnectionBuilder()
+                                .withUrl('/cmds')
+                                .build();
+
+            var connection_general = new signalR.HubConnectionBuilder()
+                                .withUrl('/general')
+                                .build();
+            
+            connection_status.on('broadcastMessage', function (name, message) {
+                var encodedName = name;
+                var encodedMsg = message;
+                var liElement = document.createElement('li');
+                liElement.innerHTML = '<b>Канал: [Статус]</b> <strong>' + encodedName + '</strong>:&nbsp;&nbsp;' + encodedMsg;
+                document.getElementById('discussion').appendChild(liElement);
+            });
+
+             connection_main.on('broadcastMessage', function (name, message) {
+                var encodedName = name;
+                var encodedMsg = message;
+                var liElement = document.createElement('li');
+               liElement.innerHTML = '<b>Канал: [Главный]</b> <strong>' + encodedName + '</strong>:&nbsp;&nbsp;' + encodedMsg;
+                document.getElementById('discussion').appendChild(liElement);
+            });
+
+             connection_data.on('broadcastMessage', function (name, message) {
+                var encodedName = name;
+                var encodedMsg = message;
+                var liElement = document.createElement('li');
+                liElement.innerHTML = '<b>Канал: [Данные]</b> <strong>' + encodedName + '</strong>:&nbsp;&nbsp;' + encodedMsg;
+                document.getElementById('discussion').appendChild(liElement);
+            });
+
+             connection_cmds.on('broadcastMessage', function (name, message) {
+                var encodedName = name;
+                var encodedMsg = message;
+                var liElement = document.createElement('li');
+                liElement.innerHTML = '<b>Канал: [Команды]</b> <strong>' + encodedName + '</strong>:&nbsp;&nbsp;' + encodedMsg;
+                document.getElementById('discussion').appendChild(liElement);
+            });
+
+             connection_general.on('broadcastMessage', function (name, message) {
+                var encodedName = name;
+                var encodedMsg = message;
+                var liElement = document.createElement('li');
+                liElement.innerHTML = '<b>Канал: [Общий]</b> <strong>' + encodedName + '</strong>:&nbsp;&nbsp;' + encodedMsg;
+                document.getElementById('discussion').appendChild(liElement);
+            });
+
+
+            // Transport fallback functionality is now built into start.
+            connection_status.start()
+                .then(function () {
+                    console.log('SignalR connection started - Channel: Status');
+                    document.getElementById('sendmessage_status').addEventListener('click', function (event) {
+                        connection_status.invoke('SendAll', name, messageInput_status.value);
+                        messageInput_status.value = '';
+                        messageInput_status.focus();
+                        event.preventDefault();
+                    });
+                    })
+            .catch(error => {
+                console.error(error.message);
+            });
+            connection_main.start()
+                .then(function () {
+                    console.log('SignalR connection started - Channel: Main');
+                     document.getElementById('sendmessage_main').addEventListener('click', function (event) {
+                        connection_main.invoke('SendAll', name, messageInput_main.value);.
+                        messageInput_main.value = '';
+                        messageInput_main.focus();
+                        event.preventDefault();
+                    });
+                    })
+            .catch(error => {
+                console.error(error.message);
+            });
+            connection_data.start()
+                .then(function () {
+                    console.log('SignalR connection started - Channel: Data');
+                     document.getElementById('sendmessage_data').addEventListener('click', function (event) {
+                        connection_data.invoke('SendAll', name, messageInput_data.value);
+                        messageInput_data.value = '';
+                        messageInput_data.focus();
+                        event.preventDefault();
+                    });
+                    })
+            .catch(error => {
+                console.error(error.message);
+            });
+             connection_cmds.start()
+                .then(function () {
+                    console.log('SignalR connection started - Channel: Cmds');
+                     document.getElementById('sendmessage_cmds').addEventListener('click', function (event) {
+                        connection_cmds.invoke('SendAll', name, messageInput_cmds.value);
+                        messageInput_cmds.value = '';
+                        messageInput_cmds.focus();
+                        event.preventDefault();
+                    });
+                    })
+            .catch(error => {
+                console.error(error.message);
+            });
+             connection_general.start()
+                .then(function () {
+                    console.log('SignalR connection started - Channel: General');
+                     document.getElementById('sendmessage_general').addEventListener('click', function (event) {
+                        connection_general.invoke('SendAll', name, messageInput_general.value);
+                        messageInput_general.value = '';
+                        messageInput_general.focus();
+                        event.preventDefault();
+                    });
+            })
+            .catch(error => {
+                console.error(error.message);
+            });
+        });
+    </script>
+</body>
+</html>
